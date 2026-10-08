@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: nidhe-israel-test
+    runtime: static
+    buildCommand: echo ready
+    staticPublishPath: ./public
+    headers:
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex, nofollow
