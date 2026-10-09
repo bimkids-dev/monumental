@@ -59,7 +59,7 @@ nav a{border:0;background:none;color:var(--muted);padding:10px 13px;border-botto
 </div>
 
 <div class="hero"><div class="eyebrow">The Shilstone collection</div><h1>Names remembered.<br>History preserved.</h1><p>Search the monumental inscriptions and burial registers of Barbados’s Jewish community, transcribed from E. M. Shilstone’s book.</p><div class="stats"><span><b id="total"></b> source records</span><span><b>1–183</b> numbered page range</span><span>Hebrew · Portuguese · Spanish · English</span></div></div>
-<div class="controls" id="searchCollection"><p id="appStatus" class="notice" role="status" aria-live="polite">Interactive search has not started. Download this file and open it in Chrome, Firefox, Safari, or Edge. File previews may display the page without running search.</p><label for="query">Search the collection</label><form class="search" id="searchForm" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/></svg><input id="query" type="search" placeholder="A name, date, Hebrew phrase, family, or place…" autocomplete="off"><button id="searchButton" class="primary" type="submit" disabled>Search</button></form><div class="search-options"><label class="check"><input id="nameVariants" type="checkbox" checked>Include name variants</label><p class="sub" id="variantHint"></p></div><div class="filters"><div><label for="family">Family</label><select id="family"><option value="">All families</option></select></div><div><label for="calendar">Year filter</label><select id="calendar"><option value="civil">Civil years</option><option value="hebrew">Hebrew years</option></select></div><div><label for="fromYear">From</label><input id="fromYear" type="number" placeholder="Any"></div><div><label for="toYear">To</label><input id="toYear" type="number" placeholder="Any"></div><div><label for="kind">Record</label><select id="kind"><option value="">All records</option><option>Monumental inscription</option><option>Burial-register extract</option></select></div><div><label for="sort">Sort by</label><select id="sort"><option value="name">Name A–Z</option><option value="page">Book order</option><option value="civil">Civil year</option><option value="hebrew">Hebrew year</option></select></div></div><div class="filterfoot"><label class="check"><input id="review" type="checkbox">Show readings and discrepancies marked for review</label><button id="reset" class="quiet">Reset filters</button></div></div>
+<div class="controls" id="searchCollection"><p id="appStatus" class="notice" role="status" aria-live="polite">Interactive search has not started. Download this file and open it in Chrome, Firefox, Safari, or Edge. File previews may display the page without running search.</p><label for="query">Search the collection</label><form class="search" id="searchForm" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/></svg><input id="query" type="search" placeholder="A name, date, Hebrew phrase, family, or place…" autocomplete="off"><button id="searchButton" class="primary" type="submit" disabled>Search</button></form><div class="search-options"><label class="check"><input id="nameVariants" type="checkbox" checked autocomplete="off">Include name variants</label><p class="sub" id="variantHint"></p></div><div class="filters"><div><label for="family">Family</label><select id="family"><option value="">All families</option></select></div><div><label for="calendar">Year filter</label><select id="calendar"><option value="civil">Civil years</option><option value="hebrew">Hebrew years</option></select></div><div><label for="fromYear">From</label><input id="fromYear" type="number" placeholder="Any"></div><div><label for="toYear">To</label><input id="toYear" type="number" placeholder="Any"></div><div><label for="kind">Record</label><select id="kind"><option value="">All records</option><option>Monumental inscription</option><option>Burial-register extract</option></select></div><div><label for="sort">Sort by</label><select id="sort"><option value="name">Name A–Z</option><option value="page">Book order</option><option value="civil">Civil year</option><option value="hebrew">Hebrew year</option></select></div></div><div class="filterfoot"><label class="check"><input id="review" type="checkbox">Show readings and discrepancies marked for review</label><button id="reset" class="quiet">Reset filters</button></div></div>
 <div class="tablehead"><span id="resultCount" role="status" aria-live="polite"></span><div><button class="outlined" id="csv">Export results · CSV</button> <button class="quiet" id="json">All records · JSON</button></div></div><div class="tablewrap"><table><thead><tr><th>Name</th><th>Civil date · as printed</th><th>Hebrew date · as printed</th><th>Age</th><th>Source</th></tr></thead><tbody id="rows"></tbody></table></div><div id="empty" class="empty" hidden>No matching records. Try a spelling variant, a wider year range, or fewer filters.</div><div class="pagination"><button id="prev" class="outlined">← Previous</button><span id="pageCount"></span><button id="next" class="outlined">Next →</button></div></section>
 <section id="readerView" hidden><h2>The master transcription</h2><p class="sub">Search the transcribed text and read in printed page order.</p><div class="readerbar"><div><label for="pageQuery">Find text in the book</label><input id="pageQuery" type="search" placeholder="Search every transcribed page…"></div><div><label for="pageSelect">Page</label><select id="pageSelect"></select></div><div class="moves"><button id="pagePrev" class="outlined">←</button><button id="pageNext" class="outlined">→</button><button id="textExport" class="outlined">Download transcript</button></div></div><div id="readerCount" class="sub" role="status"></div><article class="pagebox"><div class="eyebrow" id="readerLabel"></div><div id="pageText" class="transcript"></div></article></section>
 <section id="historyView" class="history-page" hidden aria-labelledby="historyTitle">
@@ -33227,16 +33227,23 @@ window.addEventListener('error', () => { $('appStatus').textContent = 'The datab
 const DB = JSON.parse($('database').textContent), RECORDS = DB.records, MASTER = JSON.parse($('masterData').textContent);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = s => String(s ?? '').normalize('NFKD').replace(/[\u0300-\u036f\u0591-\u05bd\u05bf-\u05c7]/g,'').toLowerCase().replace(/[^a-z0-9\u05d0-\u05ea]+/g,' ').trim();
+// Joined Acohen and printed A-Cohen are the same search spelling.
+const searchNorm = s => norm(s).replace(/\bacohen\b/g,'a cohen');
 // Search aids only: these groups do not establish a shared identity or kinship.
 const NAME_VARIANTS = [
   ['Belinfante','Belinfanti','Belenfante'], ['Louzada','Louzado','Lousada'],
   ['Pereira','Pereyra'], ['Gomes','Gomez'], ['Levi','Levy'],
   ['Andrade','Andrada'], ['Piza','Peiza'], ['Risson','Rison'],
-  ['Jeshurun','Jeshurum','Jessurun'], ['Burgos','Burgoss']
+  ['Jeshurun','Jeshurum','Jessurun'], ['Burgos','Burgoss'],
+  ['Meir','Mehir','Meher']
 ];
 const variantLookup = new Map(NAME_VARIANTS.flatMap(group => group.map(name => [norm(name),group])));
-const familyKey = s => norm(s).split(' ').map(t => norm(variantLookup.get(t)?.[0] || t)).join(' ');
-const texts = RECORDS.map(r => norm(Object.values(r).map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')));
+const familyKey = s => {
+  const key=searchNorm(s).split(' ').map(t => norm(variantLookup.get(t)?.[0] || t)).join(' ');
+  // The same recorded family occurs with and without the A-/Cohen prefix.
+  return /^(?:a )?(?:cohen )?belinfante$/.test(key) ? 'cohen belinfante' : key;
+};
+const texts = RECORDS.map(r => searchNorm(Object.values(r).map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')));
 const byId = new Map(RECORDS.map(r => [r.id,r]));
 let filtered = [], page = 0, currentRecord = null, readerPages = MASTER.order.slice(), readerPage = MASTER.order[0], variantOnly = new Set(), lastNonRecordRoute = '#home';
 const pageSize = 30;
@@ -33246,10 +33253,12 @@ const recordHash = id => '#record-' + encodeURIComponent(id);
 function recordURL(id) { const url = new URL(location.href); url.hash = recordHash(id); return url.href; }
 function transcript(s) { return String(s || '').split('\n').map(l => '<div class="line'+(/[\u0590-\u05ff]/.test(l)&&!/[a-z]/i.test(l)?' heb':'')+'"'+(/[\u0590-\u05ff]/.test(l)&&!/[a-z]/i.test(l)?' dir="rtl" lang="he"':'')+'>'+esc(l)+'</div>').join(''); }
 $('total').textContent = RECORDS.length;
+$('nameVariants').defaultChecked = true;
+$('nameVariants').checked = true;
 [...new Set(RECORDS.map(r => r.surname).filter(Boolean))].sort((a,b) => a.localeCompare(b)).forEach(f => { const o = document.createElement('option'); o.value=f; o.textContent=f; $('family').append(o); });
 function apply(reset = true) {
   if (reset) page = 0;
-  const terms = norm($('query').value).split(' ').filter(Boolean), includeVariants = $('nameVariants').checked;
+  const terms = searchNorm($('query').value).split(' ').filter(Boolean), includeVariants = $('nameVariants').checked;
   const choices = terms.map(t => includeVariants && variantLookup.has(t) ? variantLookup.get(t).map(norm) : [t]);
   const family = $('family').value, kind = $('kind').value, cal = $('calendar').value;
   const from = $('fromYear').value === '' ? null : Number($('fromYear').value), to = $('toYear').value === '' ? null : Number($('toYear').value), review = $('review').checked;
